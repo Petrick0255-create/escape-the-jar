@@ -246,14 +246,14 @@ function drawWallLine(wall) {
   ctx.moveTo(p1.x, p1.y);
   ctx.lineTo(p2.x, p2.y);
   ctx.lineWidth = WALL_T + 8;
-  ctx.strokeStyle = "#5b4033";
+  ctx.strokeStyle = "#7c2d12";
   ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y);
   ctx.lineTo(p2.x, p2.y);
   ctx.lineWidth = WALL_T + 1;
-  ctx.strokeStyle = "#c98f5a";
+  ctx.strokeStyle = "#f59e0b";
   ctx.stroke();
 
   ctx.beginPath();
@@ -311,7 +311,7 @@ function drawBall() {
   } else if (gameState === "timeover") {
     ctx.fillStyle = "#6b7280";
   } else {
-    ctx.fillStyle = "#f97316";
+    ctx.fillStyle = "#ef4444";
   }
 
   ctx.fill();
