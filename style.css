@@ -49,7 +49,7 @@ main {
 
 canvas {
   width: 100vw;
-  max-width: 520px;
+  max-width: 540px;
   height: calc(100vh - 170px);
   background: #f8fafc;
   touch-action: none;
