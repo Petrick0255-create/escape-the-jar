@@ -50,9 +50,29 @@ main {
 canvas {
   width: 100vw;
   max-width: 540px;
-  height: calc(100vh - 170px);
+  height: calc(100vh - 245px);
   background: #f8fafc;
   touch-action: none;
+}
+
+#rotatePad {
+  width: min(92vw, 520px);
+  height: 56px;
+  margin-top: 8px;
+  background: #dbe4ee;
+  border: 2px solid #1f2937;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.padText {
+  font-weight: bold;
+  color: #1f2937;
+  pointer-events: none;
 }
 
 .controls {

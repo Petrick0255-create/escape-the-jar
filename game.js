@@ -10,7 +10,9 @@ const {
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const rotatePad = document.getElementById("rotatePad");
 const stageNumber = document.getElementById("stageNumber");
+
 const prevBtn = document.getElementById("prevBtn");
 const resetBtn = document.getElementById("resetBtn");
 const nextBtn = document.getElementById("nextBtn");
@@ -28,11 +30,11 @@ let jarAngle = 0;
 let targetAngle = 0;
 let clear = false;
 
-let dragging = false;
-let lastPointerAngle = 0;
+let padDragging = false;
+let lastPadX = 0;
 
 const BALL_R = 15;
-const WALL_T = 16;
+const WALL_T = 18;
 
 function resize() {
   const rect = canvas.getBoundingClientRect();
@@ -78,11 +80,15 @@ function makeWall(line) {
 
   const body = Bodies.rectangle(p.x, p.y, len, WALL_T, {
     isStatic: true,
-    friction: 0.8,
+    friction: 0.9,
     restitution: 0.02
   });
 
-  body.local = { mx, my, baseAngle, len };
+  body.local = {
+    mx,
+    my,
+    baseAngle
+  };
 
   Body.setAngle(body, baseAngle);
 
@@ -105,7 +111,9 @@ function updateWalls() {
 }
 
 function loadLevel(index) {
-  if (runner) Runner.stop(runner);
+  if (runner) {
+    Runner.stop(runner);
+  }
 
   levelIndex = Math.max(0, Math.min(index, LEVELS.length - 1));
   stageNumber.textContent = levelIndex + 1;
@@ -115,7 +123,7 @@ function loadLevel(index) {
   engine = Engine.create();
   engine.gravity.x = 0;
   engine.gravity.y = 1;
-  engine.gravity.scale = 0.0014;
+  engine.gravity.scale = 0.0015;
 
   walls = [];
   jarAngle = 0;
@@ -132,9 +140,9 @@ function loadLevel(index) {
     BALL_R,
     {
       friction: 0.35,
-      frictionAir: 0.01,
+      frictionAir: 0.012,
       restitution: 0.02,
-      density: 0.003
+      density: 0.004
     }
   );
 
@@ -142,7 +150,7 @@ function loadLevel(index) {
     CX + level.exit.x,
     CY + level.exit.y,
     level.exit.w,
-    28,
+    30,
     {
       isStatic: true,
       isSensor: true
@@ -168,20 +176,12 @@ function loadLevel(index) {
   updateWalls();
 }
 
-function getPointerAngle(e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  return Math.atan2(y - CY, x - CX);
-}
-
 function update() {
-  jarAngle += (targetAngle - jarAngle) * 0.28;
+  jarAngle += (targetAngle - jarAngle) * 0.26;
   updateWalls();
 
-  if (ball.position.y > H + 80) {
-    if (!clear) loadLevel(levelIndex);
+  if (!clear && ball.position.y > H + 100) {
+    loadLevel(levelIndex);
   }
 }
 
@@ -208,7 +208,7 @@ function drawExit() {
   ctx.rotate(jarAngle);
 
   ctx.fillStyle = "#22c55e";
-  ctx.fillRect(-level.exit.w / 2, -8, level.exit.w, 16);
+  ctx.fillRect(-level.exit.w / 2, -9, level.exit.w, 18);
 
   ctx.restore();
 }
@@ -259,38 +259,35 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-canvas.addEventListener("pointerdown", e => {
-  dragging = true;
-  lastPointerAngle = getPointerAngle(e);
-  canvas.setPointerCapture(e.pointerId);
+rotatePad.addEventListener("pointerdown", e => {
+  padDragging = true;
+  lastPadX = e.clientX;
+  rotatePad.setPointerCapture(e.pointerId);
 });
 
-canvas.addEventListener("pointermove", e => {
-  if (!dragging) return;
+rotatePad.addEventListener("pointermove", e => {
+  if (!padDragging) return;
 
-  const now = getPointerAngle(e);
-  let delta = now - lastPointerAngle;
+  const dx = e.clientX - lastPadX;
 
-  if (delta > Math.PI) delta -= Math.PI * 2;
-  if (delta < -Math.PI) delta += Math.PI * 2;
+  targetAngle += dx * 0.012;
 
-  targetAngle += delta;
-  lastPointerAngle = now;
+  lastPadX = e.clientX;
 });
 
-canvas.addEventListener("pointerup", e => {
-  dragging = false;
-  canvas.releasePointerCapture(e.pointerId);
+rotatePad.addEventListener("pointerup", e => {
+  padDragging = false;
+  rotatePad.releasePointerCapture(e.pointerId);
 });
 
-canvas.addEventListener("pointercancel", e => {
-  dragging = false;
-  canvas.releasePointerCapture(e.pointerId);
+rotatePad.addEventListener("pointercancel", e => {
+  padDragging = false;
+  rotatePad.releasePointerCapture(e.pointerId);
 });
 
 document.addEventListener("keydown", e => {
-  if (e.key === "ArrowLeft") targetAngle -= 0.08;
-  if (e.key === "ArrowRight") targetAngle += 0.08;
+  if (e.key === "ArrowLeft") targetAngle -= 0.09;
+  if (e.key === "ArrowRight") targetAngle += 0.09;
   if (e.key === "r" || e.key === "R") loadLevel(levelIndex);
 });
 
