@@ -51,7 +51,7 @@ canvas {
   width: 100vw;
   max-width: 540px;
   height: calc(100vh - 245px);
-  background: #f8fafc;
+  background: radial-gradient(circle at center, #ffffff 0%, #edf3f8 100%);
   touch-action: none;
 }
 
