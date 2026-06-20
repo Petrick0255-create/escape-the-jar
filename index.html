@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공굴러가유 - Escape the Jar</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>공굴러가유</h1>
+      <p>Escape the Jar</p>
+    </div>
+    <div class="stage-box">
+      STAGE <span id="stageNumber">1</span>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="controls">
+      <button id="prevBtn">이전</button>
+      <button id="resetBtn">다시</button>
+      <button id="nextBtn">다음</button>
+    </div>
+
+    <p class="hint">드래그하거나 ← → 키로 항아리를 돌리세요.</p>
+  </main>
+
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
