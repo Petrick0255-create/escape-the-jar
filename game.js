@@ -29,15 +29,16 @@ let levelIndex = 0;
 let jarAngle = 0;
 let targetAngle = 0;
 
-let gameState = "playing"; // playing, clear, timeover
+let gameState = "playing";
 let startTime = 0;
 let clearTime = 0;
 
 let padDragging = false;
 let lastPadX = 0;
 
-const BALL_R = 15;
-const WALL_T = 18;
+const JAR_SCALE = 0.76;
+const BALL_R = 14;
+const WALL_T = 17;
 
 function resize() {
   const rect = canvas.getBoundingClientRect();
@@ -50,14 +51,21 @@ function resize() {
   W = rect.width;
   H = rect.height;
   CX = W / 2;
-  CY = H / 2;
+  CY = H / 2 + 12;
 
   loadLevel(levelIndex);
 }
 
 window.addEventListener("resize", resize);
 
+function S(v) {
+  return v * JAR_SCALE;
+}
+
 function localToWorld(x, y, angle = jarAngle) {
+  x = S(x);
+  y = S(y);
+
   const c = Math.cos(angle);
   const s = Math.sin(angle);
 
@@ -73,8 +81,8 @@ function makeWall(line) {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
 
-  const dx = x2 - x1;
-  const dy = y2 - y1;
+  const dx = S(x2 - x1);
+  const dy = S(y2 - y1);
 
   const len = Math.hypot(dx, dy);
   const baseAngle = Math.atan2(dy, dx);
@@ -88,6 +96,10 @@ function makeWall(line) {
   });
 
   body.local = {
+    x1,
+    y1,
+    x2,
+    y2,
     mx,
     my,
     baseAngle
@@ -141,8 +153,8 @@ function loadLevel(index) {
   }
 
   ball = Bodies.circle(
-    CX + level.start.x,
-    CY + level.start.y,
+    CX + S(level.start.x),
+    CY + S(level.start.y),
     BALL_R,
     {
       friction: 0.35,
@@ -153,10 +165,10 @@ function loadLevel(index) {
   );
 
   exitSensor = Bodies.rectangle(
-    CX + level.exit.x,
-    CY + level.exit.y,
-    level.exit.w,
-    30,
+    CX + S(level.exit.x),
+    CY + S(level.exit.y),
+    S(level.exit.w),
+    28,
     {
       isStatic: true,
       isSensor: true
@@ -204,25 +216,71 @@ function update() {
       gameState = "timeover";
     }
 
-    if (ball.position.y > H + 100) {
+    if (ball.position.y > H + 100 || ball.position.x < -100 || ball.position.x > W + 100) {
       loadLevel(levelIndex);
     }
   }
 }
 
-function drawWall(wall) {
-  const v = wall.vertices;
+function drawJarShadow() {
+  ctx.save();
+  ctx.translate(CX, CY + S(20));
+  ctx.rotate(jarAngle);
 
   ctx.beginPath();
-  ctx.moveTo(v[0].x, v[0].y);
-
-  for (let i = 1; i < v.length; i++) {
-    ctx.lineTo(v[i].x, v[i].y);
-  }
-
-  ctx.closePath();
-  ctx.fillStyle = "#1f2937";
+  ctx.ellipse(0, S(135), S(105), S(18), 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.12)";
   ctx.fill();
+
+  ctx.restore();
+}
+
+function drawWallLine(wall) {
+  const p1 = localToWorld(wall.local.x1, wall.local.y1, jarAngle);
+  const p2 = localToWorld(wall.local.x2, wall.local.y2, jarAngle);
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.lineWidth = WALL_T + 8;
+  ctx.strokeStyle = "#5b4033";
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.lineWidth = WALL_T + 1;
+  ctx.strokeStyle = "#c98f5a";
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.stroke();
+}
+
+function drawJarBodyGlow() {
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.rotate(jarAngle);
+
+  ctx.beginPath();
+  ctx.ellipse(0, S(0), S(152), S(172), 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(201, 143, 90, 0.08)";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(0, S(-150), S(68), S(18), 0, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(91, 64, 51, 0.45)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function drawExit() {
@@ -233,7 +291,14 @@ function drawExit() {
   ctx.rotate(jarAngle);
 
   ctx.fillStyle = "#22c55e";
-  ctx.fillRect(-level.exit.w / 2, -9, level.exit.w, 18);
+  ctx.strokeStyle = "#14532d";
+  ctx.lineWidth = 3;
+
+  const w = S(level.exit.w);
+  ctx.beginPath();
+  ctx.roundRect(-w / 2, -9, w, 18, 8);
+  ctx.fill();
+  ctx.stroke();
 
   ctx.restore();
 }
@@ -264,7 +329,6 @@ function drawBall() {
 
 function drawUI() {
   const level = LEVELS[levelIndex];
-  const elapsed = getElapsedTime();
   const remain = getRemainingTime();
 
   ctx.textAlign = "center";
@@ -298,8 +362,12 @@ function drawUI() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
+  drawJarShadow();
+  drawJarBodyGlow();
   drawExit();
-  walls.forEach(drawWall);
+
+  walls.forEach(drawWallLine);
+
   drawBall();
   drawUI();
 }
@@ -321,7 +389,6 @@ rotatePad.addEventListener("pointermove", e => {
   if (gameState !== "playing") return;
 
   const dx = e.clientX - lastPadX;
-
   targetAngle += dx * 0.012;
 
   lastPadX = e.clientX;
