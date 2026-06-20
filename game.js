@@ -296,8 +296,7 @@ function drawExit() {
 
   const w = S(level.exit.w);
   ctx.beginPath();
-  ctx.roundRect(-w / 2, -9, w, 18, 8);
-  ctx.fill();
+  ctx.rect(-w / 2, -9, w, 18);  ctx.fill();
   ctx.stroke();
 
   ctx.restore();
