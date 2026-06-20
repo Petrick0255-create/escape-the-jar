@@ -28,7 +28,10 @@ let walls = [];
 let levelIndex = 0;
 let jarAngle = 0;
 let targetAngle = 0;
-let clear = false;
+
+let gameState = "playing"; // playing, clear, timeover
+let startTime = 0;
+let clearTime = 0;
 
 let padDragging = false;
 let lastPadX = 0;
@@ -128,7 +131,10 @@ function loadLevel(index) {
   walls = [];
   jarAngle = 0;
   targetAngle = 0;
-  clear = false;
+
+  gameState = "playing";
+  startTime = performance.now();
+  clearTime = 0;
 
   for (const line of level.walls) {
     walls.push(makeWall(line));
@@ -160,12 +166,15 @@ function loadLevel(index) {
   World.add(engine.world, [...walls, ball, exitSensor]);
 
   Events.on(engine, "collisionStart", e => {
+    if (gameState !== "playing") return;
+
     for (const pair of e.pairs) {
       if (
         (pair.bodyA === ball && pair.bodyB === exitSensor) ||
         (pair.bodyB === ball && pair.bodyA === exitSensor)
       ) {
-        clear = true;
+        gameState = "clear";
+        clearTime = (performance.now() - startTime) / 1000;
       }
     }
   });
@@ -176,12 +185,28 @@ function loadLevel(index) {
   updateWalls();
 }
 
+function getElapsedTime() {
+  if (gameState === "clear") return clearTime;
+  return (performance.now() - startTime) / 1000;
+}
+
+function getRemainingTime() {
+  const level = LEVELS[levelIndex];
+  return Math.max(0, level.timeLimit - getElapsedTime());
+}
+
 function update() {
   jarAngle += (targetAngle - jarAngle) * 0.26;
   updateWalls();
 
-  if (!clear && ball.position.y > H + 100) {
-    loadLevel(levelIndex);
+  if (gameState === "playing") {
+    if (getRemainingTime() <= 0) {
+      gameState = "timeover";
+    }
+
+    if (ball.position.y > H + 100) {
+      loadLevel(levelIndex);
+    }
   }
 }
 
@@ -216,7 +241,15 @@ function drawExit() {
 function drawBall() {
   ctx.beginPath();
   ctx.arc(ball.position.x, ball.position.y, BALL_R, 0, Math.PI * 2);
-  ctx.fillStyle = clear ? "#22c55e" : "#f97316";
+
+  if (gameState === "clear") {
+    ctx.fillStyle = "#22c55e";
+  } else if (gameState === "timeover") {
+    ctx.fillStyle = "#6b7280";
+  } else {
+    ctx.fillStyle = "#f97316";
+  }
+
   ctx.fill();
 
   ctx.lineWidth = 3;
@@ -230,17 +263,35 @@ function drawBall() {
 }
 
 function drawUI() {
+  const level = LEVELS[levelIndex];
+  const elapsed = getElapsedTime();
+  const remain = getRemainingTime();
+
   ctx.textAlign = "center";
   ctx.fillStyle = "#111";
 
   ctx.font = "bold 18px Arial";
+  ctx.fillText(level.name, CX, 30);
 
-  if (clear) {
-    ctx.fillText("CLEAR!", CX, 42);
-    ctx.font = "14px Arial";
-    ctx.fillText("다음 버튼을 눌러 진행", CX, 66);
-  } else {
-    ctx.fillText(LEVELS[levelIndex].name, CX, 34);
+  ctx.font = "bold 16px Arial";
+  ctx.fillText(`남은 시간: ${remain.toFixed(1)}초`, CX, 56);
+
+  if (gameState === "clear") {
+    ctx.fillStyle = "#16a34a";
+    ctx.font = "bold 26px Arial";
+    ctx.fillText("CLEAR!", CX, 96);
+
+    ctx.font = "bold 17px Arial";
+    ctx.fillText(`클리어 시간: ${clearTime.toFixed(2)}초`, CX, 124);
+  }
+
+  if (gameState === "timeover") {
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 26px Arial";
+    ctx.fillText("TIME OVER", CX, 96);
+
+    ctx.font = "bold 16px Arial";
+    ctx.fillText("다시 버튼을 눌러 재도전", CX, 124);
   }
 }
 
@@ -267,6 +318,7 @@ rotatePad.addEventListener("pointerdown", e => {
 
 rotatePad.addEventListener("pointermove", e => {
   if (!padDragging) return;
+  if (gameState !== "playing") return;
 
   const dx = e.clientX - lastPadX;
 
@@ -286,6 +338,11 @@ rotatePad.addEventListener("pointercancel", e => {
 });
 
 document.addEventListener("keydown", e => {
+  if (gameState !== "playing") {
+    if (e.key === "r" || e.key === "R") loadLevel(levelIndex);
+    return;
+  }
+
   if (e.key === "ArrowLeft") targetAngle -= 0.09;
   if (e.key === "ArrowRight") targetAngle += 0.09;
   if (e.key === "r" || e.key === "R") loadLevel(levelIndex);
